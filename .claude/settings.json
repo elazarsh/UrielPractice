@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/user/UrielPractice/.claude/hooks/progress-notifier.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

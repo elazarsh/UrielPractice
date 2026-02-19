@@ -1,0 +1,608 @@
+// Prisma Schema – מערכת ניהול משרד רו"ח
+// Generated for UrielPractice – Israeli CPA Firm Management System
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN          // רו"ח מנהל
+  ACCOUNTANT     // רואה חשבון
+  BOOKKEEPER     // מנהל חשבונות
+  OFFICE_MANAGER // מנהל/ת משרד
+  PAYROLL        // רפרנט שכר
+  REVIEWER       // בקר איכות
+  CLIENT_USER    // משתמש לקוח (פורטל)
+}
+
+enum ClientType {
+  OSEK_PATUR     // עוסק פטור
+  OSEK_MURSHE    // עוסק מורשה
+  CHEVRA_BVM     // חברה בע"מ
+  SHUTAFUT       // שותפות
+  AMUTA          // עמותה
+  KIBBUTZ        // קיבוץ
+  INDIVIDUAL     // יחיד (שכיר בלבד)
+}
+
+enum ReportFrequency {
+  MONTHLY        // חודשי
+  BIMONTHLY      // דו-חודשי
+  QUARTERLY      // רבעוני
+  ANNUAL         // שנתי
+  NONE           // לא רלוונטי
+}
+
+enum ProcessStatus {
+  PENDING        // ממתין לפתיחה
+  OPEN           // פתוח - באיסוף
+  IN_PROGRESS    // בעבודה
+  WAITING_CLIENT // ממתין ללקוח
+  READY_REVIEW   // מוכן לבדיקה
+  UNDER_REVIEW   // בבדיקה
+  APPROVED       // אושר - מוכן להגשה
+  SUBMITTED      // הוגש
+  CLOSED         // נסגר
+  CANCELLED      // בוטל
+}
+
+enum StepStatus {
+  PENDING
+  IN_PROGRESS
+  WAITING_CLIENT
+  DONE
+  SKIPPED
+  BLOCKED
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+  CANCELLED
+}
+
+enum TaskType {
+  DATA_ENTRY     // קליטת נתונים
+  REVIEW         // בדיקה
+  CLIENT_CALL    // שיחה עם לקוח
+  SUBMISSION     // הגשה
+  DOCUMENT_REQUEST // בקשת מסמך
+  COLLECTION     // גביה
+  ONBOARDING     // קליטת לקוח חדש
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DocumentStatus {
+  PENDING        // ממתין
+  RECEIVED       // התקבל
+  INVALID        // לא תקין
+  VALID          // תקין
+  ARCHIVED       // ארכיון
+}
+
+enum MessageChannel {
+  INTERNAL       // הודעה פנימית במערכת
+  EMAIL
+  WHATSAPP
+  PHONE_NOTE     // תיעוד שיחה טלפונית
+}
+
+// ─────────────────────────────────────────────
+// USERS & AUTH
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          UserRole
+  isActive      Boolean   @default(true)
+  mfaEnabled    Boolean   @default(false)
+  mfaSecret     String?
+  phone         String?
+  avatarUrl     String?
+  lastLoginAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  refreshTokens  RefreshToken[]
+  assignedTasks  Task[]         @relation("TaskAssignee")
+  createdTasks   Task[]         @relation("TaskCreator")
+  auditLogs      AuditLog[]
+  messages       CommunicationMessage[]
+  processSteps   ProcessStepInstance[]  @relation("StepAssignee")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────
+// CLIENTS
+// ─────────────────────────────────────────────
+
+model Client {
+  id               String         @id @default(uuid())
+  // מזהים
+  name             String         // שם העסק / שם מלא
+  legalName        String?        // שם משפטי (לחברות)
+  taxId            String         @unique // ת"ז / ח.פ / ע.מ
+  vatNumber        String?        // מספר עוסק מורשה
+  companyNumber    String?        // מספר חברה ברשם
+
+  // סיווג
+  clientType       ClientType
+  industry         String?        // ענף עיסוק
+
+  // קשר
+  email            String?
+  phone            String?
+  mobile           String?
+  address          String?
+  city             String?
+
+  // הגדרות דיווח
+  vatFrequency     ReportFrequency @default(BIMONTHLY) // תדירות מע"מ
+  hasPayroll       Boolean         @default(false)     // האם יש שכר?
+  hasAnnualReport  Boolean         @default(true)      // דוח שנתי?
+  fiscalYearEnd    Int             @default(12)        // חודש סיום שנת מס (12 = דצמבר)
+
+  // ייפוי כוח ב-שע"מ
+  powerOfAttorneyActive Boolean   @default(false)
+  powerOfAttorneyDate   DateTime?
+
+  // סטטוס לקוח
+  isActive         Boolean        @default(true)
+  isFrozen         Boolean        @default(false)
+  frozenReason     String?
+  onboardedAt      DateTime?
+
+  // בריאות תיק (Health Score – מחושב)
+  healthScore      Int?           // 0-100
+  healthUpdatedAt  DateTime?
+
+  // הערות
+  internalNotes    String?        // הערות לצוות פנימי
+  riskNotes        String?        // סיכונים / דגשים
+
+  // ביקורת
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  // Relations
+  contacts         ClientContact[]
+  servicePlan      ServicePlan?   @relation(fields: [servicePlanId], references: [id])
+  servicePlanId    String?
+  tags             ClientTag[]
+  processInstances ProcessInstance[]
+  tasks            Task[]
+  documents        Document[]
+  messages         CommunicationMessage[]
+  billingCharges   BillingCharge[]
+  clientUsers      ClientUserAccess[]
+  auditLogs        AuditLog[]    @relation("ClientAuditLogs")
+
+  @@map("clients")
+}
+
+model ClientContact {
+  id          String   @id @default(uuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name        String
+  role        String?  // תפקיד (מנכ"ל, חשב, וכו')
+  email       String?
+  phone       String?
+  mobile      String?
+  isPrimary   Boolean  @default(false)
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  @@map("client_contacts")
+}
+
+model ClientTag {
+  id       String @id @default(uuid())
+  clientId String
+  client   Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tag      String
+
+  @@unique([clientId, tag])
+  @@map("client_tags")
+}
+
+model ClientUserAccess {
+  id         String   @id @default(uuid())
+  clientId   String
+  client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  canUpload  Boolean  @default(true)
+  canView    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  @@unique([clientId, userId])
+  @@map("client_user_access")
+}
+
+model ServicePlan {
+  id              String   @id @default(uuid())
+  name            String   // שם חבילה (למשל "חבילה בסיסית – עוסק")
+  description     String?
+  monthlyFee      Float?   // דמי ניהול חודשיים
+  includesVat     Boolean  @default(true)
+  includesPayroll Boolean  @default(false)
+  includesAnnual  Boolean  @default(true)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clients         Client[]
+
+  @@map("service_plans")
+}
+
+// ─────────────────────────────────────────────
+// PROCESS TEMPLATES (תבניות תהליך)
+// ─────────────────────────────────────────────
+
+model ProcessTemplate {
+  id              String              @id @default(uuid())
+  name            String              // "מע"מ דו-חודשי – עוסק מורשה"
+  description     String?
+  processCode     String              @unique // "VAT_BIMONTHLY", "PAYROLL_MONTHLY", etc.
+  frequency       ReportFrequency
+  applicableTo    ClientType[]        // סוגי לקוחות רלוונטיים
+  isActive        Boolean             @default(true)
+  version         Int                 @default(1)
+  slaBusinessDays Int                 @default(5)  // ימי עסקים לפני דדליין = SLA פנימי
+  notes           String?
+
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  // Relations
+  steps           TemplateStep[]
+  requiredDocs    RequiredDocumentRule[]
+  instances       ProcessInstance[]
+  dueRules        DueRule[]
+
+  @@map("process_templates")
+}
+
+model TemplateStep {
+  id              String           @id @default(uuid())
+  templateId      String
+  template        ProcessTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  order           Int
+  name            String           // "איסוף מסמכים"
+  description     String?
+  roleRequired    UserRole?        // מי מבצע שלב זה
+  defaultDuration Int              @default(2) // ימי עסקים צפויים
+  isClientStep    Boolean          @default(false) // האם הלקוח מבצע?
+  isOptional      Boolean          @default(false)
+  checklistItems  Json?            // ["בדוק חשבוניות", "בדוק הוצאות רכב", ...]
+
+  stepInstances   ProcessStepInstance[]
+
+  @@map("template_steps")
+}
+
+model DueRule {
+  id               String           @id @default(uuid())
+  templateId       String
+  template         ProcessTemplate  @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  name             String           // "דדליין מע"מ דו-חודשי"
+  // כלל: "15 ימים אחרי סוף התקופה" או "תאריך קבוע בחודש"
+  dayOfMonth       Int?             // 15 = ה-15 לחודש
+  offsetDaysFromPeriodEnd Int?      // X ימים מסוף תקופה
+  adjustForHolidays Boolean        @default(true)
+  adjustForWeekends Boolean        @default(true)
+  notes            String?
+
+  @@map("due_rules")
+}
+
+// ─────────────────────────────────────────────
+// PROCESS INSTANCES (מופעי תהליך)
+// ─────────────────────────────────────────────
+
+model ProcessInstance {
+  id              String            @id @default(uuid())
+  clientId        String
+  client          Client            @relation(fields: [clientId], references: [id])
+  templateId      String
+  template        ProcessTemplate   @relation(fields: [templateId], references: [id])
+
+  // תקופה
+  periodYear      Int               // 2026
+  periodMonth     Int?              // 1-12 (null לשנתי)
+  periodMonthEnd  Int?              // לדו-חודשי: חודש סיום (למשל 2 לינואר-פברואר)
+  periodLabel     String            // "ינואר-פברואר 2026"
+
+  // דדליינים
+  dueDate         DateTime          // תאריך הגשה לרשויות
+  internalDueDate DateTime          // SLA פנימי (לפני dueDate)
+
+  // סטטוס
+  status          ProcessStatus     @default(PENDING)
+  isLocked        Boolean           @default(false) // נעול לאחר סגירה
+
+  // הגשה
+  submittedAt     DateTime?
+  submittedBy     String?
+  submissionRef   String?           // אסמכתא הגשה
+  submissionNotes String?
+
+  // חריגה
+  isOverdue       Boolean           @default(false)
+  overdueDays     Int?
+
+  // דחיית דדליין
+  postponedTo     DateTime?
+  postponedReason String?
+  postponedBy     String?
+
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  // Relations
+  steps           ProcessStepInstance[]
+  tasks           Task[]
+  documents       Document[]
+
+  @@unique([clientId, templateId, periodYear, periodMonth])
+  @@map("process_instances")
+}
+
+model ProcessStepInstance {
+  id              String              @id @default(uuid())
+  processId       String
+  process         ProcessInstance     @relation(fields: [processId], references: [id], onDelete: Cascade)
+  templateStepId  String
+  templateStep    TemplateStep        @relation(fields: [templateStepId], references: [id])
+
+  status          StepStatus          @default(PENDING)
+  assigneeId      String?
+  assignee        User?               @relation("StepAssignee", fields: [assigneeId], references: [id])
+
+  startedAt       DateTime?
+  completedAt     DateTime?
+  notes           String?
+  checklistDone   Json?               // {"בדוק חשבוניות": true, "בדוק הוצאות רכב": false}
+
+  @@map("process_step_instances")
+}
+
+// ─────────────────────────────────────────────
+// TASKS (משימות)
+// ─────────────────────────────────────────────
+
+model Task {
+  id              String          @id @default(uuid())
+  title           String
+  description     String?
+  taskType        TaskType
+  status          TaskStatus      @default(OPEN)
+  priority        Priority        @default(MEDIUM)
+
+  // קישורים
+  clientId        String?
+  client          Client?         @relation(fields: [clientId], references: [id])
+  processId       String?
+  process         ProcessInstance? @relation(fields: [processId], references: [id])
+
+  // אחריות
+  assigneeId      String?
+  assignee        User?           @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdById     String
+  createdBy       User            @relation("TaskCreator", fields: [createdById], references: [id])
+
+  // זמנים
+  dueDate         DateTime?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  estimatedHours  Float?
+
+  // חזרה
+  isRecurring     Boolean         @default(false)
+  recurringRule   String?         // "MONTHLY", "WEEKLY", etc.
+
+  checklist       Json?           // [{"item": "...", "done": false}]
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("tasks")
+}
+
+// ─────────────────────────────────────────────
+// DOCUMENTS (מסמכים)
+// ─────────────────────────────────────────────
+
+model Document {
+  id              String          @id @default(uuid())
+  clientId        String
+  client          Client          @relation(fields: [clientId], references: [id])
+  processId       String?
+  process         ProcessInstance? @relation(fields: [processId], references: [id])
+
+  // פרטי קובץ
+  fileName        String
+  fileSize        Int             // bytes
+  mimeType        String
+  storagePath     String          // path in storage
+  checksum        String?
+
+  // מטא-דאטה
+  documentType    String          // "חשבונית מס", "ייפוי כוח", "דוח בנק", etc.
+  periodYear      Int?
+  periodMonth     Int?
+  description     String?
+  tags            String[]
+
+  // סטטוס
+  status          DocumentStatus  @default(PENDING)
+  invalidReason   String?         // סיבה אם לא תקין
+  reviewedById    String?
+  reviewedAt      DateTime?
+
+  // Versioning – 7 שנות שמירה חובה (ישראל)
+  version         Int             @default(1)
+  replacesDocId   String?         // מסמך קודם שמוחלף
+  replacedByDocId String?
+
+  uploadedById    String?
+  isClientUpload  Boolean         @default(false) // הועלה מפורטל לקוח?
+
+  retentionUntil  DateTime?       // 7 שנים מתאריך מסמך (חוק)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@map("documents")
+}
+
+model RequiredDocumentRule {
+  id              String          @id @default(uuid())
+  templateId      String
+  template        ProcessTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  documentType    String          // סוג מסמך נדרש
+  description     String?
+  isRequired      Boolean         @default(true)
+  applicableTo    ClientType[]    // רלוונטי לסוגי לקוח אלה
+  notes           String?
+
+  @@map("required_document_rules")
+}
+
+// ─────────────────────────────────────────────
+// COMMUNICATION (תקשורת)
+// ─────────────────────────────────────────────
+
+model CommunicationMessage {
+  id          String          @id @default(uuid())
+  clientId    String
+  client      Client          @relation(fields: [clientId], references: [id])
+  senderId    String?
+  sender      User?           @relation(fields: [senderId], references: [id])
+
+  channel     MessageChannel  @default(INTERNAL)
+  subject     String?
+  body        String
+  isFromClient Boolean        @default(false)
+  isRead      Boolean         @default(false)
+  readAt      DateTime?
+
+  // קישור לתהליך/מסמך
+  processId   String?
+  templateRef String?
+
+  sentAt      DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+
+  @@map("communication_messages")
+}
+
+// ─────────────────────────────────────────────
+// BILLING (חיוב וגביה)
+// ─────────────────────────────────────────────
+
+model BillingCharge {
+  id            String    @id @default(uuid())
+  clientId      String
+  client        Client    @relation(fields: [clientId], references: [id])
+
+  description   String    // "דמי ניהול ינואר 2026"
+  amount        Float
+  vatAmount     Float     @default(0)
+  totalAmount   Float
+  currency      String    @default("ILS")
+
+  chargeDate    DateTime
+  dueDate       DateTime
+  isPaid        Boolean   @default(false)
+  paidAt        DateTime?
+
+  invoiceNumber String?
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  payments      Payment[]
+
+  @@map("billing_charges")
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  chargeId    String
+  charge      BillingCharge @relation(fields: [chargeId], references: [id])
+  amount      Float
+  method      String?       // "bank_transfer", "check", "credit_card"
+  reference   String?       // אסמכתא תשלום
+  paidAt      DateTime
+  notes       String?
+  createdAt   DateTime      @default(now())
+
+  @@map("payments")
+}
+
+// ─────────────────────────────────────────────
+// AUDIT LOG (לוג ביקורת)
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  clientId    String?
+  client      Client?  @relation("ClientAuditLogs", fields: [clientId], references: [id])
+
+  action      String   // "CLIENT_CREATED", "PROCESS_SUBMITTED", "DOCUMENT_UPLOADED", etc.
+  entityType  String   // "Client", "ProcessInstance", "Document", etc.
+  entityId    String?
+
+  before      Json?    // מצב לפני
+  after       Json?    // מצב אחרי
+  source      String   @default("UI") // "UI" | "API" | "SYSTEM"
+  ipAddress   String?
+  userAgent   String?
+  notes       String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
