@@ -1,0 +1,24 @@
+{
+  "name": "uriel-practice-bots",
+  "version": "1.0.0",
+  "description": "בוטים לסימולציית משתמשים ובדיקות UrielPractice",
+  "type": "module",
+  "scripts": {
+    "run": "npx tsx runner.ts",
+    "run:parallel": "npx tsx runner.ts --parallel",
+    "run:cpa": "npx tsx runner.ts --bot cpa",
+    "run:admin": "npx tsx runner.ts --bot admin",
+    "run:office": "npx tsx runner.ts --bot office-staff",
+    "run:business-owner": "npx tsx runner.ts --bot business-owner",
+    "run:tax": "npx tsx runner.ts --bot tax-authority",
+    "run:vat": "npx tsx runner.ts --bot vat-authority",
+    "run:qa": "npx tsx runner.ts --bot qa-tester",
+    "run:pm": "npx tsx runner.ts --bot product-manager",
+    "run:payroll": "npx tsx runner.ts --bot payroll"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

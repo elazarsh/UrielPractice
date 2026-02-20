@@ -12,7 +12,10 @@
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
     "db:migrate": "npm run db:migrate --workspace=backend",
     "db:seed": "npm run db:seed --workspace=backend",
-    "db:studio": "npm run db:studio --workspace=backend"
+    "db:studio": "npm run db:studio --workspace=backend",
+    "bots": "tsx bots/runner.ts",
+    "bots:parallel": "tsx bots/runner.ts --parallel",
+    "bots:report": "tsx bots/runner.ts --output ./bots/reports"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
