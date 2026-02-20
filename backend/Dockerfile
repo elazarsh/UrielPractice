@@ -13,7 +13,7 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
@@ -25,4 +25,4 @@ RUN mkdir -p /app/uploads
 EXPOSE 3001
 
 # הרץ migrations + seed + start
-CMD sh -c "npx prisma migrate deploy && node dist/index.js"
+CMD sh -c "npx prisma migrate deploy && npx tsx prisma/seed.ts && node dist/index.js"
