@@ -32,7 +32,9 @@ async function bootstrap() {
   // Security
   await app.register(helmet, { global: true })
   await app.register(cors, {
-    origin: config.NODE_ENV === 'production' ? false : ['http://localhost:3000'],
+    origin: config.NODE_ENV === 'production'
+      ? (process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : false)
+      : ['http://localhost:3000'],
     credentials: true,
   })
 
@@ -92,6 +94,21 @@ async function bootstrap() {
   await app.register(taskRoutes,            { prefix: '/api/tasks' })
   await app.register(documentRoutes,        { prefix: '/api/documents' })
   await app.register(dashboardRoutes,       { prefix: '/api/dashboard' })
+
+  // הגש את ה-frontend כ-SPA (בproduction בלבד)
+  const frontendDist = path.resolve(__dirname, '../frontend/dist')
+  if (config.NODE_ENV === 'production' && fs.existsSync(frontendDist)) {
+    await app.register(fastifyStatic, {
+      root: frontendDist,
+      prefix: '/',
+      decorateReply: false,
+      wildcard: false,
+    })
+    // SPA fallback: כל route שאינו API → index.html
+    app.setNotFoundHandler(async (_request, reply) => {
+      return reply.status(200).sendFile('index.html', frontendDist)
+    })
+  }
 
   await app.listen({ port: config.PORT, host: '0.0.0.0' })
   console.log(`🚀 Server running on http://localhost:${config.PORT}`)
