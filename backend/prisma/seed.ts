@@ -495,22 +495,25 @@ async function main() {
     },
   })
 
-  // דוח שנתי 2024 לירין ייעוץ – ממתין
-  await prisma.processInstance.upsert({
-    where: { clientId_templateId_periodYear_periodMonth: { clientId: clients[2].id, templateId: annualReport.id, periodYear: 2024, periodMonth: null } },
-    update: {},
-    create: {
-      clientId: clients[2].id,
-      templateId: annualReport.id,
-      periodYear: 2024,
-      periodMonth: null,
-      periodLabel: 'שנת 2024',
-      dueDate: new Date('2026-04-30'),
-      internalDueDate: new Date('2026-04-15'),
-      status: 'OPEN',
-      isOverdue: false,
-    },
+  // דוח שנתי 2024 לירין ייעוץ – ממתין (periodMonth=null, no upsert)
+  const existingAnnual = await prisma.processInstance.findFirst({
+    where: { clientId: clients[2].id, templateId: annualReport.id, periodYear: 2024, periodMonth: null },
   })
+  if (!existingAnnual) {
+    await prisma.processInstance.create({
+      data: {
+        clientId: clients[2].id,
+        templateId: annualReport.id,
+        periodYear: 2024,
+        periodMonth: null,
+        periodLabel: 'שנת 2024',
+        dueDate: new Date('2026-04-30'),
+        internalDueDate: new Date('2026-04-15'),
+        status: 'OPEN',
+        isOverdue: false,
+      },
+    })
+  }
 
   console.log('✅ מופעי תהליך לדמו נוצרו')
 

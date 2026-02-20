@@ -131,6 +131,7 @@ model User {
   auditLogs      AuditLog[]
   messages       CommunicationMessage[]
   processSteps   ProcessStepInstance[]  @relation("StepAssignee")
+  clientAccess   ClientUserAccess[]
 
   @@map("users")
 }
