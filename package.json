@@ -2,7 +2,10 @@
   "name": "uriel-practice",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["backend", "frontend"],
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
     "backend": "npm run dev --workspace=backend",
     "frontend": "npm run dev --workspace=frontend",
@@ -13,5 +16,8 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "pino-pretty": "^13.1.3"
   }
 }
