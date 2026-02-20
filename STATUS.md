@@ -1,14 +1,13 @@
 # סטטוס עדכני – מערכת ניהול משרד רו"ח
-**עודכן לאחרונה:** 2026-02-20 00:26:51
-**עובד אחרון:** מפתח-לקוח
-**משימה:** [T14] – DONE
+**עודכן לאחרונה:** 2026-02-20 12:39:07
+**עובד אחרון:** מפתח-שרת
+**משימה:** [T21-T23] – DONE
 
 ## ✅ משימה נוכחית
-**מפתח-לקוח** | **[T14]** | DONE: Frontend core: main.tsx, App.tsx, index.css, api/client.ts, types, auth hooks
+**מפתח-שרת** | **[T21-T23]** | DONE: DocumentsPage + seed data ישראלי + Docker Compose
 
 ## 20 הרשומות האחרונות בלוג
 ```
-[2026-02-19 22:20:51] [START] [T05] מתחיל: Backend Fastify skeleton - app, config, middleware, shared utils
 [2026-02-19 22:21:38] [DONE] [T05] Backend skeleton הושלם: config, prisma client, errors, audit, types, index.ts עם כל ה-plugins ו-routes
 [2026-02-19 22:21:58] [START] [T06] מתחיל: Auth endpoints - login, refresh, logout, JWT tokens
 [2026-02-19 22:22:44] [DONE] [T06] Auth הושלם: login, refresh, logout, me endpoints + dateUtils ישראלי (חגים/שבתות)
@@ -28,6 +27,7 @@
 [2026-02-20 00:26:42] ✅ [DONE] [T16] [מפתח-לקוח] Layout: Sidebar RTL, TopBar, Badge, Card UI components
 [2026-02-20 00:26:47] ✅ [DONE] [T19] [מפתח-לקוח] Processes: list with filters + detail view with timeline, steps, submit action
 [2026-02-20 00:26:51] ✅ [DONE] [T14] [מפתח-לקוח] Frontend core: main.tsx, App.tsx, index.css, api/client.ts, types, auth hooks
+[2026-02-20 12:39:07] ✅ [DONE] [T21-T23] [מפתח-שרת] DocumentsPage + seed data ישראלי + Docker Compose
 ```
 
 ## איך לעקוב מבחוץ

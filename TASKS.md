@@ -46,13 +46,13 @@ tail -20 /home/user/UrielPractice/progress.log
 | T18 | Client list screen + Client 360 card | 20 min | ⬜ PENDING |
 | T19 | Process/workflow view screen (timeline + steps) | 20 min | ⬜ PENDING |
 | T20 | Task management screen (inbox by role) | 20 min | ⬜ PENDING |
-| T21 | Document hub screen (upload + missing docs list) | 20 min | ⬜ PENDING |
+| T21 | Document hub screen (upload + missing docs list) | 20 min | ✅ DONE |
 
 ## SPRINT 4 – נתוני פתיחה ופריסה
 | ID  | משימה | זמן מוערך | סטטוס |
 |-----|--------|-----------|--------|
-| T22 | Seed data: תבניות תהליך ישראליות (מע"מ, ניכויים, דוח שנתי) + משתמשי demo | 15 min | ⬜ PENDING |
-| T23 | Docker Compose (backend + postgres + frontend) | 15 min | ⬜ PENDING |
+| T22 | Seed data: תבניות תהליך ישראליות (מע"מ, ניכויים, דוח שנתי) + משתמשי demo | 15 min | ✅ DONE |
+| T23 | Docker Compose (backend + postgres + frontend) | 15 min | ✅ DONE |
 
 ---
 

@@ -124,6 +124,26 @@ export interface OverdueDebt {
   client: { id: string; name: string }
 }
 
+export type DocumentStatus = 'RECEIVED' | 'VALID' | 'INVALID' | 'EXPIRED'
+
+export interface Document {
+  id: string
+  clientId: string
+  processId?: string
+  fileName: string
+  fileSize: number
+  mimeType: string
+  documentType: string
+  description?: string
+  periodYear?: number
+  periodMonth?: number
+  status: DocumentStatus
+  invalidReason?: string
+  retentionUntil?: string
+  createdAt: string
+  client?: { id: string; name: string }
+}
+
 export interface PaginatedResult<T> {
   data: T[]
   total: number
