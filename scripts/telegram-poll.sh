@@ -10,6 +10,8 @@ STATUS_FILE="$SCRIPT_DIR/../STATUS.md"
 TASKS_FILE="$SCRIPT_DIR/../TASKS.md"
 WORKER_STATUS_FILE="$SCRIPT_DIR/../WORKER_STATUS.md"
 PID_FILE="/tmp/uriel-poll.pid"
+BOT_VERSION="$(git -C "$SCRIPT_DIR/.." log --oneline -1 2>/dev/null || echo 'unknown')"
+BOT_STARTED="$(date '+%Y-%m-%d %H:%M:%S')"
 
 source "$ENV_FILE" 2>/dev/null || { echo "❌ .env.telegram לא נמצא"; exit 1; }
 
@@ -240,6 +242,16 @@ if data.get('ok') and data.get('result'):
         send_message "$REPLY"
         ;;
 
+      /version|/גרסה)
+        send_message "🔖 <b>גרסת בוט – UrielPractice</b>
+
+📦 <code>${BOT_VERSION}</code>
+🕐 הופעל: ${BOT_STARTED}
+
+✅ פקודות פעילות:
+/status /workers /sprints /tasks /log /log30 /version /help"
+        ;;
+
       /help|/עזרה)
         send_message "🤖 <b>פקודות זמינות – UrielPractice</b>
 
@@ -248,8 +260,11 @@ if data.get('ok') and data.get('result'):
 /sprints  – סיכום ספרינטים + חלוקת בוטים
 /tasks    – רשימת משימות עם סטטוס
 /log      – 15 שורות לוג אחרונות
-/log30    – 30 שורות לוג אחרונות
-/help     – עזרה"
+/log30    – 30 שורות לוג
+/version  – גרסת הבוט הנוכחית
+/help     – עזרה
+
+🔖 <i>גרסה: $(echo "${BOT_VERSION}" | cut -c1-40)</i>"
         ;;
 
     esac
