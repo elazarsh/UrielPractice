@@ -33,6 +33,7 @@ fi
 
 # ─────────────────────────────────────────────────────────
 # פונקציה: הפעל בוט בודד כ-background process
+# launch_bot BOT_ID TASK_IDS WORKER_CODE WORKER_NAME PROMPT SCREEN FEATURE DOING
 # ─────────────────────────────────────────────────────────
 launch_bot() {
   local BOT_ID="$1"
@@ -40,9 +41,17 @@ launch_bot() {
   local WORKER_CODE="$3"
   local WORKER_NAME="$4"
   local PROMPT="$5"
+  local SCREEN="${6:-—}"
+  local FEATURE="${7:-—}"
+  local DOING="${8:-בעבודה}"
   local LOG_FILE="$RESULTS_DIR/bot-${BOT_ID}.log"
 
   log "🤖 [START]" "בוט $BOT_ID ($TASK_IDS) – $WORKER_NAME מופעל"
+
+  # רשום START מפורט ל-progress.log ול-WORKER_STATUS.md
+  "$WORKDIR/scripts/log-progress.sh" \
+    "$TASK_IDS" "START" "מתחיל: $FEATURE" "$WORKER_CODE" \
+    "${SCREEN}|${FEATURE}|${DOING}" 2>/dev/null || true
 
   # הפעל claude ב-background, שמור פלט לקובץ
   claude --print \
@@ -196,19 +205,34 @@ case "$MODE" in
 ║  FE-ה: T19 – Process/workflow timeline              ║
 ╚══════════════════════════════════════════════════════╝
 "
-    PIDS+=( "$(launch_bot '1-FE-א' 'T15' 'FE' 'מפתח-לקוח א' "$PROMPT_FE_A")" )
+    PIDS+=( "$(launch_bot '1-FE-א' 'T15' 'FE' 'מפתח-לקוח א' "$PROMPT_FE_A" \
+      '/login – LoginPage' \
+      'Auth context + טופס כניסה עברי' \
+      'ולידציה עברית (שדה חובה/סיסמה שגויה) + loading spinner + remember-me + שגיאות רשת')" )
     BOT_IDS+=( "1-FE-א" )
 
-    PIDS+=( "$(launch_bot '2-FE-ב' 'T17' 'FE' 'מפתח-לקוח ב' "$PROMPT_FE_B")" )
+    PIDS+=( "$(launch_bot '2-FE-ב' 'T17' 'FE' 'מפתח-לקוח ב' "$PROMPT_FE_B" \
+      '/dashboard – DashboardPage' \
+      '5 אזורי עבודה עם נתונים חיים' \
+      'איחורים(אדום) + מתקרבים(כתום) + ממתין ללקוח(צהוב) + מוכן לבדיקה(ירוק) + המשימות שלי · ניווט בלחיצה')" )
     BOT_IDS+=( "2-FE-ב" )
 
-    PIDS+=( "$(launch_bot '3-FE-ג' 'T18' 'FE' 'מפתח-לקוח ג' "$PROMPT_FE_C")" )
+    PIDS+=( "$(launch_bot '3-FE-ג' 'T18' 'FE' 'מפתח-לקוח ג' "$PROMPT_FE_C" \
+      '/clients + /clients/:id' \
+      'רשימת לקוחות + Client 360 עם טאבים' \
+      'חיפוש + פילטר לפי סוג עסק · 360: פרטים/תהליכים/מסמכים/תשלומים/תקשורת')" )
     BOT_IDS+=( "3-FE-ג" )
 
-    PIDS+=( "$(launch_bot '4-FE-ד' 'T20' 'FE' 'מפתח-לקוח ד' "$PROMPT_FE_D")" )
+    PIDS+=( "$(launch_bot '4-FE-ד' 'T20' 'FE' 'מפתח-לקוח ד' "$PROMPT_FE_D" \
+      '/tasks – TasksPage' \
+      'תיבת דואר נכנס מסוננת לפי תפקיד' \
+      'עמודות: משימה/לקוח/יעד/עדיפות/סטטוס · פעולות מהירות: הושלם/הקצה · צבעי תאריכים')" )
     BOT_IDS+=( "4-FE-ד" )
 
-    PIDS+=( "$(launch_bot '5-FE-ה' 'T19' 'FE' 'מפתח-לקוח ה' "$PROMPT_FE_E")" )
+    PIDS+=( "$(launch_bot '5-FE-ה' 'T19' 'FE' 'מפתח-לקוח ה' "$PROMPT_FE_E" \
+      '/processes + /processes/:id' \
+      'ציר זמן ויזואלי + שלבים' \
+      'רשימה עם פילטר סטטוס + חיפוש · Detail: ציר זמן, שלב נוכחי מודגש, כפתור הגש שלב')" )
     BOT_IDS+=( "5-FE-ה" )
     ;;
 esac
@@ -221,7 +245,10 @@ case "$MODE" in
 ║  QA: T24 – Acceptance tests (בוחן)                  ║
 ╚══════════════════════════════════════════════════════╝
 "
-    PIDS+=( "$(launch_bot '6-QA' 'T24' 'QA' 'הבוחן' "$PROMPT_QA")" )
+    PIDS+=( "$(launch_bot '6-QA' 'T24' 'QA' 'הבוחן' "$PROMPT_QA" \
+      'כל המסכים' \
+      'בדיקות קבלה אוטומטיות (acceptance tests)' \
+      'הרצת 9 bot personas במקביל · בדיקת auth/clients/processes/tasks/documents/dashboard · כתיבת qa-summary.md')" )
     BOT_IDS+=( "6-QA" )
     ;;
 esac
