@@ -23,6 +23,10 @@ import { communicationRoutes } from './communications/communication.routes'
 import { taxPaymentRoutes } from './tax-payments/tax-payment.routes'
 import { auditRoutes } from './audit/audit.routes'
 import { payrollRoutes } from './payroll/payroll.routes'
+import { reportsRoutes } from './reports/reports.routes'
+import { calendarRoutes } from './calendar/calendar.routes'
+import { taxFormsRoutes } from './tax-forms/tax-forms.routes'
+import { onboardingRoutes } from './onboarding/onboarding.routes'
 
 const app = Fastify({
   logger: {
@@ -104,6 +108,10 @@ async function bootstrap() {
   await app.register(taxPaymentRoutes,      { prefix: '/api/tax-payments' })
   await app.register(auditRoutes,           { prefix: '/api/audit-logs' })
   await app.register(payrollRoutes,         { prefix: '/api/payroll' })
+  await app.register(reportsRoutes,         { prefix: '/api/reports' })
+  await app.register(calendarRoutes,        { prefix: '/api/calendar' })
+  await app.register(taxFormsRoutes,        { prefix: '/api/tax-forms' })
+  await app.register(onboardingRoutes,      { prefix: '/api/onboarding' })
 
   // הגש את ה-frontend כ-SPA (בproduction בלבד)
   const frontendDist = path.resolve(__dirname, '../frontend/dist')

@@ -8,4 +8,4 @@ uploads/
 coverage/
 .turbo/
 .env.telegram
-reports/
+bots/reports/

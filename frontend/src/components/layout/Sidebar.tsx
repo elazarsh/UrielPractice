@@ -21,10 +21,11 @@ const navSections: NavSection[] = [
   {
     title: 'ניהול לקוחות',
     items: [
-      { to: '/clients',    icon: '👥', label: 'לקוחות'       },
-      { to: '/processes',  icon: '📋', label: 'תהליכים'      },
-      { to: '/tasks',      icon: '✅', label: 'משימות'       },
-      { to: '/documents',  icon: '📁', label: 'מסמכים'       },
+      { to: '/clients',     icon: '👥', label: 'לקוחות'       },
+      { to: '/onboarding',  icon: '🚀', label: 'קליטת לקוח'  },
+      { to: '/processes',   icon: '📋', label: 'תהליכים'      },
+      { to: '/tasks',       icon: '✅', label: 'משימות'       },
+      { to: '/documents',   icon: '📁', label: 'מסמכים'       },
       { to: '/communications', icon: '💬', label: 'תקשורת'   },
     ],
   },
@@ -34,6 +35,14 @@ const navSections: NavSection[] = [
       { to: '/billing',      icon: '💰', label: 'חיוב וגביה'  },
       { to: '/tax-payments', icon: '🏛️', label: 'תשלומי מסים' },
       { to: '/payroll',      icon: '👷', label: 'שכר'         },
+    ],
+  },
+  {
+    title: 'ניתוח ודוחות',
+    items: [
+      { to: '/calendar',   icon: '📅', label: 'יומן דדליינים' },
+      { to: '/reports',    icon: '📊', label: 'דוחות KPI'     },
+      { to: '/tax-forms',  icon: '📝', label: 'טפסי מס'       },
     ],
   },
   {
