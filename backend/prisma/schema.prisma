@@ -104,6 +104,65 @@ enum MessageChannel {
   PHONE_NOTE     // תיעוד שיחה טלפונית
 }
 
+enum SubmissionStatus {
+  PENDING_CONFIRMATION  // הוגש, ממתין לאישור
+  ACCEPTED              // אושר
+  REJECTED              // נדחה
+  PENDING_CORRECTION    // ממתין לתיקון
+}
+
+enum TaxPaymentType {
+  VAT                        // מע"מ
+  INCOME_TAX_WITHHOLDING     // ניכויים במקור
+  NATIONAL_INSURANCE         // ביטוח לאומי
+  ADVANCE_PAYMENT            // מקדמות מס הכנסה
+  CORPORATE_TAX              // מס חברות
+}
+
+enum IsraeliFormType {
+  FORM_1301   // דוח שנתי ליחיד
+  FORM_1214   // דוח שנתי לחברה
+  FORM_102    // ניכויים חודשיים
+  FORM_106    // אישור שכר שנתי
+  FORM_856    // אישור ניכוי במקור
+  FORM_50     // ריכוז הכנסות עצמאי
+  FORM_1220   // קביעת מקדמות
+  FORM_134    // דוח ביטוח לאומי שנתי
+  FORM_101    // כרטיס עובד
+  OTHER
+}
+
+enum FormStatus {
+  NOT_STARTED
+  IN_PREPARATION
+  PENDING_SIGNATURE
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+enum OnboardingStatus {
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+}
+
+enum ReminderTriggerType {
+  PROCESS_DUE_SOON
+  DOCUMENT_MISSING
+  PAYMENT_OVERDUE
+  PROCESS_OVERDUE
+  CUSTOM
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+  SKIPPED
+  FAILED
+}
+
 // ─────────────────────────────────────────────
 // USERS & AUTH
 // ─────────────────────────────────────────────
@@ -211,6 +270,12 @@ model Client {
   billingCharges   BillingCharge[]
   clientUsers      ClientUserAccess[]
   auditLogs        AuditLog[]    @relation("ClientAuditLogs")
+  taxPayments      TaxPayment[]
+  employees        Employee[]
+  payrollRecords   PayrollRecord[]
+  taxForms         IsraeliFormSubmission[]
+  reminders        ScheduledReminder[]
+  onboarding       ClientOnboarding?
 
   @@map("clients")
 }
@@ -606,4 +671,217 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────
+// SUBMISSION RECORDS (תיעוד הגשות לרשויות)
+// ─────────────────────────────────────────────
+
+model SubmissionRecord {
+  id                  String           @id @default(uuid())
+  processId           String
+  process             ProcessInstance  @relation(fields: [processId], references: [id], onDelete: Cascade)
+  submissionType      IsraeliFormType
+  referenceNumber     String?          // מספר אסמכתא
+  submittedAt         DateTime
+  submittedBy         String
+  status              SubmissionStatus @default(PENDING_CONFIRMATION)
+  rejectionReason     String?
+  correctionDeadline  DateTime?
+  rawResponse         Json?            // לשימוש עתידי עם API אמיתי
+  notes               String?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  @@map("submission_records")
+}
+
+// ─────────────────────────────────────────────
+// TAX PAYMENTS (תשלומי מסים לרשויות)
+// ─────────────────────────────────────────────
+
+model TaxPayment {
+  id              String          @id @default(uuid())
+  clientId        String
+  client          Client          @relation(fields: [clientId], references: [id])
+  processId       String?
+  paymentType     TaxPaymentType
+  periodYear      Int
+  periodMonth     Int?
+  amount          Float
+  vatAmount       Float?
+  referenceNumber String?         // אסמכתא תשלום
+  dueDate         DateTime
+  isPaid          Boolean         @default(false)
+  paidAt          DateTime?
+  paidById        String?
+  bankBranch      String?
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([clientId, periodYear, periodMonth])
+  @@index([isPaid, dueDate])
+  @@map("tax_payments")
+}
+
+// ─────────────────────────────────────────────
+// EMPLOYEES & PAYROLL (עובדים ושכר)
+// ─────────────────────────────────────────────
+
+model Employee {
+  id              String          @id @default(uuid())
+  clientId        String
+  client          Client          @relation(fields: [clientId], references: [id])
+  firstName       String
+  lastName        String
+  idNumber        String          // ת"ז
+  startDate       DateTime
+  endDate         DateTime?
+  monthlySalary   Float?
+  hourlyRate      Float?
+  pensionFund     String?
+  pensionPercent  Float?          @default(6)
+  isActive        Boolean         @default(true)
+  bankAccount     String?
+  notes           String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  payrollRecords  PayrollRecord[]
+
+  @@unique([clientId, idNumber])
+  @@map("employees")
+}
+
+model PayrollRecord {
+  id                      String     @id @default(uuid())
+  clientId                String
+  client                  Client     @relation(fields: [clientId], references: [id])
+  employeeId              String
+  employee                Employee   @relation(fields: [employeeId], references: [id])
+  periodYear              Int
+  periodMonth             Int
+  grossSalary             Float
+  incomeTaxWithheld       Float      @default(0)
+  nationalInsuranceEmp    Float      @default(0)
+  nationalInsuranceEmpl   Float      @default(0)
+  pensionEmployee         Float      @default(0)
+  pensionEmployer         Float      @default(0)
+  netSalary               Float
+  workDays                Int?
+  absenceDays             Int?
+  notes                   String?
+  processId               String?
+  createdAt               DateTime   @default(now())
+  updatedAt               DateTime   @updatedAt
+
+  @@unique([employeeId, periodYear, periodMonth])
+  @@map("payroll_records")
+}
+
+// ─────────────────────────────────────────────
+// ISRAELI TAX FORMS (טפסי מס ישראליים)
+// ─────────────────────────────────────────────
+
+model IsraeliFormSubmission {
+  id                String          @id @default(uuid())
+  clientId          String
+  client            Client          @relation(fields: [clientId], references: [id])
+  formType          IsraeliFormType
+  taxYear           Int
+  periodMonth       Int?
+  status            FormStatus      @default(NOT_STARTED)
+  dueDate           DateTime?
+  submittedAt       DateTime?
+  referenceNumber   String?
+  preparedById      String?
+  approvedById      String?
+  notes             String?
+  relatedProcessId  String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([clientId, formType, taxYear, periodMonth])
+  @@index([clientId, taxYear])
+  @@index([status, dueDate])
+  @@map("israeli_form_submissions")
+}
+
+// ─────────────────────────────────────────────
+// ISRAELI HOLIDAYS (חגים ישראליים)
+// ─────────────────────────────────────────────
+
+model IsraeliHoliday {
+  id            String   @id @default(uuid())
+  date          DateTime @unique
+  name          String
+  hebrewYear    Int?
+  isWorkingDay  Boolean  @default(false)
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([date])
+  @@map("israeli_holidays")
+}
+
+// ─────────────────────────────────────────────
+// REMINDERS (תזכורות אוטומטיות)
+// ─────────────────────────────────────────────
+
+model ReminderTemplate {
+  id                String               @id @default(uuid())
+  name              String
+  triggerType       ReminderTriggerType
+  daysBeforeDue     Int                  @default(7)
+  channel           MessageChannel
+  subjectTemplate   String?
+  bodyTemplate      String               // תמיכה ב-{{clientName}}, {{dueDate}}, {{processName}}
+  isActive          Boolean              @default(true)
+  applicableTo      ClientType[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  reminders         ScheduledReminder[]
+  @@map("reminder_templates")
+}
+
+model ScheduledReminder {
+  id              String            @id @default(uuid())
+  templateId      String
+  template        ReminderTemplate  @relation(fields: [templateId], references: [id])
+  clientId        String
+  client          Client            @relation(fields: [clientId], references: [id])
+  processId       String?
+  targetEmail     String?
+  targetPhone     String?
+  scheduledFor    DateTime
+  sentAt          DateTime?
+  status          ReminderStatus    @default(PENDING)
+  renderedBody    String
+  renderedSubject String?
+  createdAt       DateTime          @default(now())
+
+  @@index([status, scheduledFor])
+  @@map("scheduled_reminders")
+}
+
+// ─────────────────────────────────────────────
+// CLIENT ONBOARDING (קליטת לקוח חדש)
+// ─────────────────────────────────────────────
+
+model ClientOnboarding {
+  id           String           @id @default(uuid())
+  clientId     String           @unique
+  client       Client           @relation(fields: [clientId], references: [id])
+  status       OnboardingStatus @default(IN_PROGRESS)
+  assignedToId String?
+  startedAt    DateTime         @default(now())
+  completedAt  DateTime?
+  checklist    Json             @default("[]")
+  notes        String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@map("client_onboarding")
 }
