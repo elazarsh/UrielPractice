@@ -10,6 +10,11 @@ import ProcessesPage from './pages/processes/ProcessesPage'
 import ProcessDetailPage from './pages/processes/ProcessDetailPage'
 import TasksPage from './pages/tasks/TasksPage'
 import DocumentsPage from './pages/documents/DocumentsPage'
+import BillingPage from './pages/billing/BillingPage'
+import TaxPaymentsPage from './pages/tax-payments/TaxPaymentsPage'
+import CommunicationsPage from './pages/communications/CommunicationsPage'
+import PayrollPage from './pages/payroll/PayrollPage'
+import AuditLogPage from './pages/admin/AuditLogPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const auth = useAuthProvider()
@@ -33,6 +38,11 @@ export default function App() {
           <Route path="processes/:id"      element={<ProcessDetailPage />} />
           <Route path="tasks"              element={<TasksPage />} />
           <Route path="documents"          element={<DocumentsPage />} />
+          <Route path="billing"            element={<BillingPage />} />
+          <Route path="tax-payments"       element={<TaxPaymentsPage />} />
+          <Route path="communications"     element={<CommunicationsPage />} />
+          <Route path="payroll"            element={<PayrollPage />} />
+          <Route path="audit-log"          element={<AuditLogPage />} />
         </Route>
       </Routes>
     </AuthContext.Provider>

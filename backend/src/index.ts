@@ -18,6 +18,11 @@ import { processInstanceRoutes } from './processes/instance.routes'
 import { taskRoutes } from './tasks/task.routes'
 import { documentRoutes } from './documents/document.routes'
 import { dashboardRoutes } from './dashboard/dashboard.routes'
+import { billingRoutes } from './billing/billing.routes'
+import { communicationRoutes } from './communications/communication.routes'
+import { taxPaymentRoutes } from './tax-payments/tax-payment.routes'
+import { auditRoutes } from './audit/audit.routes'
+import { payrollRoutes } from './payroll/payroll.routes'
 
 const app = Fastify({
   logger: {
@@ -94,6 +99,11 @@ async function bootstrap() {
   await app.register(taskRoutes,            { prefix: '/api/tasks' })
   await app.register(documentRoutes,        { prefix: '/api/documents' })
   await app.register(dashboardRoutes,       { prefix: '/api/dashboard' })
+  await app.register(billingRoutes,         { prefix: '/api/billing' })
+  await app.register(communicationRoutes,   { prefix: '/api/communications' })
+  await app.register(taxPaymentRoutes,      { prefix: '/api/tax-payments' })
+  await app.register(auditRoutes,           { prefix: '/api/audit-logs' })
+  await app.register(payrollRoutes,         { prefix: '/api/payroll' })
 
   // הגש את ה-frontend כ-SPA (בproduction בלבד)
   const frontendDist = path.resolve(__dirname, '../frontend/dist')

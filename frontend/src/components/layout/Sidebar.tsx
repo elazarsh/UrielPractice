@@ -7,12 +7,42 @@ interface NavItem {
   label: string
 }
 
-const navItems: NavItem[] = [
-  { to: '/dashboard',  icon: '🏠', label: 'לוח בקרה'    },
-  { to: '/clients',    icon: '👥', label: 'לקוחות'       },
-  { to: '/processes',  icon: '📋', label: 'תהליכים'      },
-  { to: '/tasks',      icon: '✅', label: 'משימות'       },
-  { to: '/documents',  icon: '📁', label: 'מסמכים'       },
+interface NavSection {
+  title?: string
+  items: NavItem[]
+}
+
+const navSections: NavSection[] = [
+  {
+    items: [
+      { to: '/dashboard',  icon: '🏠', label: 'לוח בקרה'    },
+    ],
+  },
+  {
+    title: 'ניהול לקוחות',
+    items: [
+      { to: '/clients',    icon: '👥', label: 'לקוחות'       },
+      { to: '/processes',  icon: '📋', label: 'תהליכים'      },
+      { to: '/tasks',      icon: '✅', label: 'משימות'       },
+      { to: '/documents',  icon: '📁', label: 'מסמכים'       },
+      { to: '/communications', icon: '💬', label: 'תקשורת'   },
+    ],
+  },
+  {
+    title: 'כספים',
+    items: [
+      { to: '/billing',      icon: '💰', label: 'חיוב וגביה'  },
+      { to: '/tax-payments', icon: '🏛️', label: 'תשלומי מסים' },
+      { to: '/payroll',      icon: '👷', label: 'שכר'         },
+    ],
+  },
+  {
+    title: 'ניהול',
+    items: [
+      { to: '/audit-log',  icon: '📜', label: 'לוג ביקורת'   },
+      { to: '/users',      icon: '🔑', label: 'משתמשים'      },
+    ],
+  },
 ]
 
 export function Sidebar() {
@@ -34,22 +64,33 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-1">
-        {navItems.map(item => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-blue-50 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-              }`
-            }
-          >
-            <span className="text-lg">{item.icon}</span>
-            <span>{item.label}</span>
-          </NavLink>
+      <nav className="flex-1 p-3 overflow-y-auto space-y-3">
+        {navSections.map((section, si) => (
+          <div key={si}>
+            {section.title && (
+              <p className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                {section.title}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {section.items.map(item => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`
+                  }
+                >
+                  <span className="text-base">{item.icon}</span>
+                  <span>{item.label}</span>
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
