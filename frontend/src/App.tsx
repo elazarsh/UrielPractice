@@ -19,6 +19,7 @@ import CalendarPage from './pages/calendar/CalendarPage'
 import ReportsPage from './pages/reports/ReportsPage'
 import TaxFormsPage from './pages/tax-forms/TaxFormsPage'
 import OnboardingPage from './pages/onboarding/OnboardingPage'
+import RemindersPage from './pages/reminders/RemindersPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const auth = useAuthProvider()
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="reports"            element={<ReportsPage />} />
           <Route path="tax-forms"          element={<TaxFormsPage />} />
           <Route path="onboarding"         element={<OnboardingPage />} />
+          <Route path="reminders"          element={<RemindersPage />} />
         </Route>
       </Routes>
     </AuthContext.Provider>

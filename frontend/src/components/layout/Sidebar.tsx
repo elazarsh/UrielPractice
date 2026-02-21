@@ -48,6 +48,7 @@ const navSections: NavSection[] = [
   {
     title: 'ניהול',
     items: [
+      { to: '/reminders',  icon: '🔔', label: 'תזכורות'      },
       { to: '/audit-log',  icon: '📜', label: 'לוג ביקורת'   },
       { to: '/users',      icon: '🔑', label: 'משתמשים'      },
     ],

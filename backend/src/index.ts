@@ -27,6 +27,7 @@ import { reportsRoutes } from './reports/reports.routes'
 import { calendarRoutes } from './calendar/calendar.routes'
 import { taxFormsRoutes } from './tax-forms/tax-forms.routes'
 import { onboardingRoutes } from './onboarding/onboarding.routes'
+import { remindersRoutes } from './reminders/reminders.routes'
 
 const app = Fastify({
   logger: {
@@ -112,6 +113,7 @@ async function bootstrap() {
   await app.register(calendarRoutes,        { prefix: '/api/calendar' })
   await app.register(taxFormsRoutes,        { prefix: '/api/tax-forms' })
   await app.register(onboardingRoutes,      { prefix: '/api/onboarding' })
+  await app.register(remindersRoutes,       { prefix: '/api/reminders' })
 
   // הגש את ה-frontend כ-SPA (בproduction בלבד)
   const frontendDist = path.resolve(__dirname, '../frontend/dist')
