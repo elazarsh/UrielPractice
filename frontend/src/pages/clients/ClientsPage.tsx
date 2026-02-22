@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { clientsApi } from '../../api/clients'
 import { Badge } from '../../components/ui/Badge'
 import { Card } from '../../components/ui/Card'
-import { Client } from '../../types'
+import { Client, PaginatedResult } from '../../types'
 
 const CLIENT_TYPE_LABELS: Record<string, string> = {
   OSEK_PATUR: 'עוסק פטור', OSEK_MURSHE: 'עוסק מורשה', CHEVRA_BVM: 'חברה בע"מ',
@@ -59,11 +59,11 @@ export default function ClientsPage() {
   const [isActive, setIsActive] = useState('true')
   const [page, setPage] = useState(1)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<PaginatedResult<Client>>({
     queryKey: ['clients', search, clientType, isActive, page],
     queryFn: () => clientsApi.list({ search: search || undefined, clientType: clientType || undefined, isActive, page, limit: 25 }),
-    keepPreviousData: true,
-  } as any)
+    placeholderData: (prev) => prev,
+  })
 
   return (
     <div className="space-y-5" dir="rtl">

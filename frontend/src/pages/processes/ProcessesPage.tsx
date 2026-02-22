@@ -23,9 +23,9 @@ export default function ProcessesPage() {
   const [status, setStatus] = useState(searchParams.get('status') ?? '')
   const [isOverdue, setIsOverdue] = useState(searchParams.get('overdue') ?? '')
   const [clientId] = useState(searchParams.get('clientId') ?? '')
-  const [page, setPage] = useState(1)
+  const [page] = useState(1)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<{ data: import('../../types').ProcessInstance[]; total: number }>({
     queryKey: ['processes', status, isOverdue, clientId, page],
     queryFn: () => processesApi.list({
       status: status || undefined,
@@ -33,8 +33,8 @@ export default function ProcessesPage() {
       clientId: clientId || undefined,
       page, limit: 25,
     }),
-    keepPreviousData: true,
-  } as any)
+    placeholderData: (prev) => prev,
+  })
 
   return (
     <div className="space-y-5" dir="rtl">

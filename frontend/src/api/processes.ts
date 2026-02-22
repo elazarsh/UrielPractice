@@ -1,5 +1,5 @@
 import { apiClient } from './client'
-import { ProcessInstance, PaginatedResult } from '../types'
+import { ProcessInstance } from '../types'
 
 export const processesApi = {
   list: (params?: Record<string, string | number | undefined>) =>
