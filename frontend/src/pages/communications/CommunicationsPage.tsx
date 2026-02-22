@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { communicationsApi, CommunicationMessage, MessageChannel } from '../../api/communications'
 import { Card } from '../../components/ui/Card'
-import { Badge } from '../../components/ui/Badge'
 
 const CHANNEL_LABELS: Record<MessageChannel, string> = {
   INTERNAL: 'פנימי',

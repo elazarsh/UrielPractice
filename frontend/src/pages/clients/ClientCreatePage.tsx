@@ -143,7 +143,7 @@ export default function ClientCreatePage() {
               {errors.taxId && <p className="text-red-500 text-xs mt-1">{errors.taxId}</p>}
             </Field>
 
-            <Field label="מספר עוסק / מע"מ">
+            <Field label={'מספר עוסק / מע"מ'}>
               <input value={form.vatNumber} onChange={set('vatNumber')} className={`${inputClass} font-mono`} placeholder="מספר עוסק" dir="ltr" />
             </Field>
 
