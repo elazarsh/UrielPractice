@@ -6,6 +6,7 @@ import LoginPage from './pages/auth/LoginPage'
 import DashboardPage from './pages/dashboard/DashboardPage'
 import ClientsPage from './pages/clients/ClientsPage'
 import ClientDetailPage from './pages/clients/ClientDetailPage'
+import ClientCreatePage from './pages/clients/ClientCreatePage'
 import ProcessesPage from './pages/processes/ProcessesPage'
 import ProcessDetailPage from './pages/processes/ProcessDetailPage'
 import TasksPage from './pages/tasks/TasksPage'
@@ -15,6 +16,7 @@ import TaxPaymentsPage from './pages/tax-payments/TaxPaymentsPage'
 import CommunicationsPage from './pages/communications/CommunicationsPage'
 import PayrollPage from './pages/payroll/PayrollPage'
 import AuditLogPage from './pages/admin/AuditLogPage'
+import UsersPage from './pages/admin/UsersPage'
 import CalendarPage from './pages/calendar/CalendarPage'
 import ReportsPage from './pages/reports/ReportsPage'
 import TaxFormsPage from './pages/tax-forms/TaxFormsPage'
@@ -38,6 +40,7 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard"          element={<DashboardPage />} />
           <Route path="clients"            element={<ClientsPage />} />
+          <Route path="clients/new"        element={<ClientCreatePage />} />
           <Route path="clients/:id"        element={<ClientDetailPage />} />
           <Route path="processes"          element={<ProcessesPage />} />
           <Route path="processes/:id"      element={<ProcessDetailPage />} />
@@ -48,6 +51,7 @@ export default function App() {
           <Route path="communications"     element={<CommunicationsPage />} />
           <Route path="payroll"            element={<PayrollPage />} />
           <Route path="audit-log"          element={<AuditLogPage />} />
+          <Route path="users"              element={<UsersPage />} />
           <Route path="calendar"           element={<CalendarPage />} />
           <Route path="reports"            element={<ReportsPage />} />
           <Route path="tax-forms"          element={<TaxFormsPage />} />
