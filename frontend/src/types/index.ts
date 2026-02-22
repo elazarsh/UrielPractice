@@ -34,9 +34,6 @@ export interface Client {
   isFrozen: boolean
   powerOfAttorneyActive: boolean
   healthScore?: number
-  companyNumber?: string
-  mobile?: string
-  riskNotes?: string
   internalNotes?: string
   tags: { tag: string }[]
   contacts?: ClientContact[]

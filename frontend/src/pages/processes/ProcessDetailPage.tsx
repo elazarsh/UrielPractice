@@ -142,11 +142,10 @@ export default function ProcessDetailPage() {
   if (!process) return <div className="text-red-600 p-4">תהליך לא נמצא</div>
 
   const statusLabel = PROCESS_STATUS_LABELS[process.status] ?? process.status
-  const statusColorMap: Record<string, string> = {
+  const statusColor = {
     SUBMITTED: 'green', WAITING_CLIENT: 'yellow', APPROVED: 'green',
     READY_REVIEW: 'purple', UNDER_REVIEW: 'purple', CANCELLED: 'gray', CLOSED: 'gray',
-  }
-  const statusColor = statusColorMap[process.status] ?? 'blue'
+  }[process.status] ?? 'blue'
 
   const availableTransitions = STATUS_TRANSITIONS[process.status] ?? []
 
