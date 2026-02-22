@@ -1,0 +1,17 @@
+FROM alpine:3.19
+
+# כלים נדרשים: bash, curl, python3, git, tzdata
+RUN apk add --no-cache \
+    bash \
+    curl \
+    python3 \
+    git \
+    tzdata \
+    ca-certificates
+
+ENV TZ=Asia/Jerusalem
+
+WORKDIR /workspace
+
+# הרץ את הבוט
+CMD ["bash", "/workspace/scripts/telegram-poll.sh"]

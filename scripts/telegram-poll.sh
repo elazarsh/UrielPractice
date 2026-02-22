@@ -2,6 +2,7 @@
 # טלגרם-פולינג – מאזין לפקודות מהמשתמש בטלגרם ומחזיר סטטוס מפורט
 # הפעל ברקע: nohup ./scripts/telegram-poll.sh &
 # עצור:      kill $(cat /tmp/uriel-poll.pid)
+# 24/7: מופעל אוטומטית ע"י Docker (restart: unless-stopped) / crontab
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/../.env.telegram"
@@ -16,7 +17,15 @@ BOT_STARTED="$(date '+%Y-%m-%d %H:%M:%S')"
 source "$ENV_FILE" 2>/dev/null || { echo "❌ .env.telegram לא נמצא"; exit 1; }
 
 echo $$ > "$PID_FILE"
+HEARTBEAT_FILE="/tmp/uriel-bot-heartbeat"
+CONSECUTIVE_ERRORS=0
+MAX_ERRORS=10   # אחרי 10 שגיאות רצופות – יציאה לאפשר Docker לאתחל
+
 echo "📡 השליח מאזין לפקודות... (PID: $$)"
+touch "$HEARTBEAT_FILE"
+
+# ניקוי בסיום (SIGTERM, SIGINT)
+trap 'echo "🛑 השליח נעצר (PID: $$)"; rm -f "$PID_FILE" "$HEARTBEAT_FILE"; exit 0' TERM INT
 
 # ─────────────────────────────────────────────────────────
 # שלח הודעה לטלגרם (עם פיצול אוטומטי ל-4096 תווים)
@@ -260,7 +269,26 @@ PYEOF
 OFFSET=0
 
 while true; do
-  UPDATES=$(curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${OFFSET}&timeout=30" 2>/dev/null)
+  # עדכן heartbeat בכל סיבוב
+  touch "$HEARTBEAT_FILE"
+
+  UPDATES=$(curl -s --max-time 35 \
+    "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates?offset=${OFFSET}&timeout=30" \
+    2>/dev/null)
+
+  # בדוק תגובה תקינה
+  if [ -z "$UPDATES" ] || ! echo "$UPDATES" | python3 -c "import json,sys; d=json.load(sys.stdin); exit(0 if d.get('ok') else 1)" 2>/dev/null; then
+    CONSECUTIVE_ERRORS=$((CONSECUTIVE_ERRORS + 1))
+    echo "$(date '+%H:%M:%S') ⚠️ שגיאת רשת (#${CONSECUTIVE_ERRORS}) – ממתין 10 שניות"
+    if [ "$CONSECUTIVE_ERRORS" -ge "$MAX_ERRORS" ]; then
+      echo "❌ יותר מ-$MAX_ERRORS שגיאות רצופות – יוצא לאפשר אתחול"
+      exit 1
+    fi
+    sleep 10
+    continue
+  fi
+
+  CONSECUTIVE_ERRORS=0   # איפוס מונה שגיאות בתגובה תקינה
 
   RESULTS=$(echo "$UPDATES" | python3 -c "
 import json, sys
