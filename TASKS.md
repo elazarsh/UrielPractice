@@ -43,13 +43,14 @@ tail -20 /home/user/UrielPractice/progress.log
 | ID  | משימה | בוט | זמן מוערך | סטטוס |
 |-----|--------|-----|-----------|--------|
 | T14 | Frontend setup: React + Vite + TypeScript + Tailwind + RTL + React Query | - | 20 min | ✅ DONE |
-| T15 | Auth context + login screen (RTL, Hebrew, validation, errors) | **FE-א** | 20 min | 🔄 IN PROGRESS |
+| T15 | Auth context + login screen (RTL, Hebrew, validation, errors) | **FE-א** | 20 min | ✅ DONE |
 | T16 | Layout component + RTL sidebar navigation | - | 20 min | ✅ DONE |
-| T17 | Dashboard screen (5 zones: Overdue, Due Soon, Waiting, Ready, My Tasks) | **FE-ב** | 20 min | 🔄 IN PROGRESS |
-| T18 | Client list screen + Client 360 card (tabs: פרטים/תהליכים/מסמכים/תשלומים) | **FE-ג** | 20 min | 🔄 IN PROGRESS |
-| T19 | Process/workflow view screen (timeline + steps + submit action) | **FE-ה** | 20 min | 🔄 IN PROGRESS |
-| T20 | Task management screen (inbox by role, filters, quick actions) | **FE-ד** | 20 min | 🔄 IN PROGRESS |
+| T17 | Dashboard screen (5 zones: Overdue, Due Soon, Waiting, Ready, My Tasks) | **FE-ב** | 20 min | ✅ DONE |
+| T18 | Client list screen + Client 360 card (tabs: פרטים/תהליכים/מסמכים/תשלומים) + ClientCreatePage | **FE-ג** | 20 min | ✅ DONE |
+| T19 | Process/workflow view screen (timeline + steps + status transitions מלאים) | **FE-ה** | 20 min | ✅ DONE |
+| T20 | Task management screen (inbox by role, filters, quick actions) | **FE-ד** | 20 min | ✅ DONE |
 | T21 | Document hub screen (upload + missing docs list) | - | 20 min | ✅ DONE |
+| T25 | UsersPage (/users) – ניהול משתמשים + הזמנה | **FE** | 15 min | ✅ DONE |
 
 ## SPRINT 4 – נתוני פתיחה ופריסה
 | ID  | משימה | זמן מוערך | סטטוס |

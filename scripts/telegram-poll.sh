@@ -19,57 +19,90 @@ echo $$ > "$PID_FILE"
 echo "📡 השליח מאזין לפקודות... (PID: $$)"
 
 # ─────────────────────────────────────────────────────────
-# שלח הודעה לטלגרם
+# שלח הודעה לטלגרם (עם פיצול אוטומטי ל-4096 תווים)
 # ─────────────────────────────────────────────────────────
 send_message() {
   local text="$1"
-  curl -s -X POST \
-    "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-    -H "Content-Type: application/json" \
-    -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": $(echo "$text" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'), \"parse_mode\": \"HTML\"}" \
-    > /dev/null
+  local MAX=4000
+
+  # אם ההודעה קצרה מספיק – שלח ישירות
+  if [ "${#text}" -le "$MAX" ]; then
+    curl -s -X POST \
+      "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+      -H "Content-Type: application/json" \
+      -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": $(echo "$text" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'), \"parse_mode\": \"HTML\"}" \
+      > /dev/null
+    return
+  fi
+
+  # פצל לפי שורות לחלקים של עד MAX תווים
+  local chunk=""
+  while IFS= read -r line; do
+    candidate="${chunk}${line}
+"
+    if [ "${#candidate}" -gt "$MAX" ]; then
+      # שלח chunk הנוכחי
+      if [ -n "$chunk" ]; then
+        curl -s -X POST \
+          "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+          -H "Content-Type: application/json" \
+          -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": $(echo "$chunk" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'), \"parse_mode\": \"HTML\"}" \
+          > /dev/null
+        sleep 0.5
+      fi
+      chunk="${line}
+"
+    else
+      chunk="$candidate"
+    fi
+  done <<< "$text"
+
+  # שלח שארית
+  if [ -n "$chunk" ]; then
+    curl -s -X POST \
+      "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+      -H "Content-Type: application/json" \
+      -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": $(echo "$chunk" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'), \"parse_mode\": \"HTML\"}" \
+      > /dev/null
+  fi
 }
 
 # ─────────────────────────────────────────────────────────
-# בנה תגובת /status – סיכום חכם לפי ספרינטים
+# בנה תגובת /status – סיכום לפי ספרינטים (קורא TASKS.md בזמן אמת)
 # ─────────────────────────────────────────────────────────
 build_status() {
-  local LOG_FILE="$PROGRESS_LOG"
-  local LAST_TS LAST_WORKER LAST_TASK
+  local LAST_LINE LAST_TS
 
-  # קרא עדכון אחרון מה-log
-  LAST_LINE=$(tail -1 "$LOG_FILE" 2>/dev/null)
+  LAST_LINE=$(tail -1 "$PROGRESS_LOG" 2>/dev/null)
   LAST_TS=$(echo "$LAST_LINE" | grep -oP '\[\K[^\]]+(?=\])' | head -1)
-  LAST_WORKER=$(echo "$LAST_LINE" | grep -oP '\[([^\]]+)\]' | sed -n '3p' | tr -d '[]')
-  LAST_TASK=$(echo "$LAST_LINE" | grep -oP '\[([^\]]+)\]' | sed -n '2p' | tr -d '[]')
 
-  # ספור משימות
-  DONE_COUNT=$(grep -c "✅\|DONE" "$LOG_FILE" 2>/dev/null || echo 0)
-  FAIL_COUNT=$(grep -c "❌\|FAIL" "$LOG_FILE" 2>/dev/null || echo 0)
-  IN_PROG=$(grep -c "🔄\|START" "$LOG_FILE" 2>/dev/null || echo 0)
+  # ספור לפי TASKS.md
+  local S1_DONE S2_DONE S3_DONE S3_PROG S4_DONE S5_PEND
 
-  # סטטוס ספרינטים מ-TASKS.md
-  S1=$(grep -c "Sprint 1\|T0[1-5].*✅" "$TASKS_FILE" 2>/dev/null || echo "?")
-  FE_DONE=$(grep -E "T1[4-9]|T2[01]" "$TASKS_FILE" 2>/dev/null | grep -c "✅" || echo 0)
-  FE_PROG=$(grep -E "T1[4-9]|T2[01]" "$TASKS_FILE" 2>/dev/null | grep -c "🔄" || echo 0)
-  FE_PEND=$(grep -E "T1[4-9]|T2[01]" "$TASKS_FILE" 2>/dev/null | grep -c "⬜" || echo 0)
+  S1_DONE=$(grep -E "T0[1-5].*✅" "$TASKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
+  S2_DONE=$(grep -E "T(0[6-9]|1[0-3]).*✅" "$TASKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
+  S3_DONE=$(grep -E "T(1[4-9]|2[01]|25).*✅" "$TASKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
+  S3_PROG=$(grep -E "T(1[4-9]|2[01]|25).*🔄" "$TASKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
+  S4_DONE=$(grep -E "T2[23].*✅" "$TASKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
+  S5_PEND=$(grep -E "T24.*⬜" "$TASKS_FILE" 2>/dev/null | wc -l | tr -d ' ')
+
+  local S3_STATUS="✅ הושלם"
+  [ "$S3_PROG" -gt 0 ] && S3_STATUS="🔄 בעבודה (${S3_DONE} סגורות, ${S3_PROG} בתהליך)"
 
   echo "🎼 <b>UrielPractice – סטטוס פרויקט</b>
 ⏰ עדכון: ${LAST_TS:-לא ידוע}
 
 <b>ספרינטים:</b>
-✅ Sprint 1 – תשתית (T01-T05) <b>הושלם</b>
-✅ Sprint 2 – Backend API (T06-T13) <b>הושלם</b>
-🔄 Sprint 3 – Frontend (T14-T21) <b>בעבודה</b>
-   └ ✅ הושלמו: ${FE_DONE} מסכים | 🔄 פעילים: ${FE_PROG} | ⬜ ממתינים: ${FE_PEND}
-✅ Sprint 4 – נתונים + Docker (T22-T23) <b>הושלם</b>
-⬜ Sprint 5 – QA (T24) <b>ממתין ל-Sprint 3</b>
+✅ Sprint 1 – תשתית (T01-T05) – ${S1_DONE}/5 הושלמו
+✅ Sprint 2 – Backend API (T06-T13) – ${S2_DONE}/8 הושלמו
+${S3_STATUS:0:2} Sprint 3 – Frontend (T14-T25) – ${S3_STATUS}
+✅ Sprint 4 – נתונים + Docker (T22-T23) – ${S4_DONE}/2 הושלמו
+⬜ Sprint 5 – QA (T24) – ממתין
 
 <b>עדכון אחרון:</b>
 <code>$(echo "$LAST_LINE" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')</code>
 
-📋 /workers – פירוט לפי עובד
-📜 /log – 15 שורות לוג אחרונות"
+📋 /workers | 📊 /sprints | 📜 /log | ❓ /help"
 }
 
 # ─────────────────────────────────────────────────────────
@@ -77,89 +110,68 @@ build_status() {
 # ─────────────────────────────────────────────────────────
 build_workers() {
   if [ ! -f "$WORKER_STATUS_FILE" ]; then
-    echo "⚠️ WORKER_STATUS.md לא נמצא. הפעל את הבוטים תחילה."
+    echo "⚠️ WORKER_STATUS.md לא נמצא."
     return
   fi
 
-  # קרא את WORKER_STATUS.md ופרמט ל-Telegram HTML
-  python3 - "$WORKER_STATUS_FILE" << 'PYEOF'
-import sys, re
+  python3 << PYEOF
+import re, sys
 
-filepath = sys.argv[1]
-with open(filepath, 'r', encoding='utf-8') as f:
+with open("$WORKER_STATUS_FILE", "r", encoding="utf-8") as f:
     content = f.read()
 
-output = []
-output.append("🏗 <b>UrielPractice – פירוט עובדים פעילים</b>\n")
+output = ["🏗 <b>UrielPractice – פירוט עובדים</b>\n"]
 
-# מצא כל בלוק עובד (## סמל שם)
-blocks = re.split(r'\n(?=## [✅🔄❌🚨⬜📝])', content)
+blocks = re.split(r'\n(?=## )', content)
 
 for block in blocks:
-    if not block.strip() or block.startswith('#') and '📊' in block:
+    if not block.strip():
         continue
     lines = block.strip().split('\n')
     if not lines or not lines[0].startswith('##'):
         continue
+    # דלג על כותרת ראשית וסיכום
+    header_text = lines[0].replace('## ', '').strip()
+    if '📊' in header_text or 'סיכום' in header_text:
+        continue
 
-    header = lines[0].replace('## ', '').strip()
-    # קרא שדות
     fields = {}
     for line in lines[1:]:
         m = re.match(r'\*\*([^*]+)\*\*:\s*(.*)', line)
         if m:
             fields[m.group(1).strip()] = m.group(2).strip()
 
-    # קבע badge
-    if '✅' in header:
-        badge = '✅'
-    elif '🔄' in header:
-        badge = '🔄'
-    elif '❌' in header:
-        badge = '❌'
-    elif '🚨' in header:
-        badge = '🚨'
-    elif '⬜' in header:
-        badge = '⬜'
-    else:
-        badge = '📝'
+    badge = '✅' if '✅' in header_text else '🔄' if '🔄' in header_text else '⬜' if '⬜' in header_text else '❌' if '❌' in header_text else '📝'
+    name = re.sub(r'^[✅🔄❌🚨⬜📝]\s*', '', header_text)
 
-    # בנה הודעה לעובד זה
-    name = re.sub(r'^[✅🔄❌🚨⬜📝]\s*', '', header)
     block_text = f"\n{badge} <b>{name}</b>"
 
     task = fields.get('משימה', '')
     if task:
-        block_text += f"\n  📌 משימה: {task}"
+        block_text += f"\n  📌 {task}"
 
     screen = fields.get('מסך', '')
     if screen and screen != '—':
-        block_text += f"\n  🖥 מסך: <code>{screen}</code>"
-
-    feature = fields.get('פיצ\'ר', '') or fields.get('פיצ'ר', '')
-    if feature and feature != '—':
-        block_text += f"\n  🔧 פיצ'ר: {feature}"
+        block_text += f"\n  🖥 <code>{screen}</code>"
 
     doing = fields.get('עוסק ב', '')
     if doing:
-        block_text += f"\n  ✏️ עוסק ב: {doing}"
+        # קיצור ל-120 תווים
+        short = doing[:120] + ('...' if len(doing) > 120 else '')
+        block_text += f"\n  ✏️ {short}"
 
     updated = fields.get('עודכן', '')
     if updated and updated != '—':
-        block_text += f"\n  ⏰ עודכן: {updated}"
+        block_text += f"\n  ⏰ {updated}"
 
     output.append(block_text)
 
-# חלק להודעות (מגבלת 4096 תווים לטלגרם)
-full = '\n'.join(output)
-# escape HTML chars (מחוץ לתגיות)
-safe = full.replace('&', '&amp;')
-print(safe)
+print('\n'.join(output))
 PYEOF
 }
 
 # ─────────────────────────────────────────────────────────
-# בנה תגובת /log – לוג מפורמט
+# בנה תגובת /log
 # ─────────────────────────────────────────────────────────
 build_log() {
   local N="${1:-15}"
@@ -168,13 +180,82 @@ build_log() {
   if [ -z "$LINES" ]; then
     echo "📜 <b>לוג ריק</b> – עדיין לא הופעלו בוטים."
   else
-    echo "📜 <b>$N שורות לוג אחרונות:</b>
+    echo "📜 <b>${N} שורות לוג אחרונות:</b>
 <code>${LINES}</code>"
   fi
 }
 
 # ─────────────────────────────────────────────────────────
-# לולאת פולינג
+# בנה תגובת /sprints – קורא מ-TASKS.md בזמן אמת
+# ─────────────────────────────────────────────────────────
+build_sprints() {
+  python3 << PYEOF
+import re
+
+with open("$TASKS_FILE", "r", encoding="utf-8") as f:
+    content = f.read()
+
+lines = content.split('\n')
+sprints = {}
+current = None
+
+for line in lines:
+    sm = re.match(r'## SPRINT (\d+)', line)
+    if sm:
+        current = int(sm.group(1))
+        sprints[current] = {'done': 0, 'prog': 0, 'pend': 0, 'fail': 0, 'tasks': []}
+    if current and re.match(r'\| T\d+', line):
+        cells = [c.strip() for c in line.split('|')]
+        if len(cells) >= 5:
+            tid = cells[1]
+            task_name = cells[2][:50]
+            status = cells[-2]
+            if '✅' in status:
+                sprints[current]['done'] += 1
+            elif '🔄' in status:
+                sprints[current]['prog'] += 1
+                sprints[current]['tasks'].append(f"  🔄 {tid}: {task_name}")
+            elif '⬜' in status:
+                sprints[current]['pend'] += 1
+            elif '❌' in status:
+                sprints[current]['fail'] += 1
+
+out = ["📊 <b>סיכום ספרינטים – UrielPractice</b>\n"]
+
+sprint_names = {
+    1: "תשתית",
+    2: "Backend API",
+    3: "Frontend",
+    4: "נתונים + Docker",
+    5: "QA"
+}
+
+for num in sorted(sprints.keys()):
+    s = sprints[num]
+    total = s['done'] + s['prog'] + s['pend'] + s['fail']
+    if s['fail'] > 0:
+        badge = '❌'
+    elif s['prog'] > 0:
+        badge = '🔄'
+    elif s['pend'] == total:
+        badge = '⬜'
+    elif s['done'] == total:
+        badge = '✅'
+    else:
+        badge = '🔄'
+
+    name = sprint_names.get(num, f"Sprint {num}")
+    out.append(f"{badge} <b>Sprint {num}</b> – {name}")
+    out.append(f"   ✅ {s['done']} הושלמו | 🔄 {s['prog']} פעילים | ⬜ {s['pend']} ממתינים")
+    for t in s['tasks']:
+        out.append(t)
+
+print('\n'.join(out))
+PYEOF
+}
+
+# ─────────────────────────────────────────────────────────
+# לולאת פולינג ראשית
 # ─────────────────────────────────────────────────────────
 OFFSET=0
 
@@ -195,10 +276,13 @@ if data.get('ok') and data.get('result'):
   while IFS= read -r line; do
     [ -z "$line" ] && continue
     UPDATE_ID=$(echo "$line" | cut -d'|||' -f1)
-    TEXT=$(echo "$line" | cut -d'|||' -f2)
+    RAW_TEXT=$(echo "$line" | cut -d'|||' -f2)
     OFFSET=$((UPDATE_ID + 1))
 
-    case "$TEXT" in
+    # strip @BotName suffix (e.g. /help@MyBot → /help)
+    CMD=$(echo "$RAW_TEXT" | sed 's/@[A-Za-z0-9_]*//' | awk '{print $1}')
+
+    case "$CMD" in
 
       /status|/סטטוס)
         send_message "$(build_status)"
@@ -208,7 +292,7 @@ if data.get('ok') and data.get('result'):
         send_message "$(build_workers)"
         ;;
 
-      /log|/לוג)
+      /log)
         send_message "$(build_log 15)"
         ;;
 
@@ -218,28 +302,14 @@ if data.get('ok') and data.get('result'):
 
       /tasks|/משימות)
         TASKS=$(grep -E "T[0-9]+.*[✅🔄⬜❌]" "$TASKS_FILE" 2>/dev/null \
-          | head -20 \
+          | head -30 \
           | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g')
         send_message "📋 <b>משימות:</b>
 <code>$TASKS</code>"
         ;;
 
       /sprints|/ספרינטים)
-        REPLY="📊 <b>סיכום ספרינטים</b>
-
-✅ <b>Sprint 1</b> – תשתית (T01-T05) הושלם
-✅ <b>Sprint 2</b> – Backend API (T06-T13) הושלם
-🔄 <b>Sprint 3</b> – Frontend – 5 בוטים מקבילים:
-   FE-א → T15: Login + Auth
-   FE-ב → T17: Dashboard (5 zones)
-   FE-ג → T18: Clients + 360
-   FE-ד → T20: Task inbox
-   FE-ה → T19: Process timeline
-✅ <b>Sprint 4</b> – נתונים + Docker (T22-T23) הושלם
-⬜ <b>Sprint 5</b> – QA (T24) ממתין
-
-<i>להפעלת בוטים: ./scripts/launch-parallel-bots.sh fe</i>"
-        send_message "$REPLY"
+        send_message "$(build_sprints)"
         ;;
 
       /version|/גרסה)
@@ -255,16 +325,16 @@ if data.get('ok') and data.get('result'):
       /help|/עזרה)
         send_message "🤖 <b>פקודות זמינות – UrielPractice</b>
 
-/status   – סטטוס נוכחי לפי ספרינטים
-/workers  – <b>פירוט מלא לפי עובד</b> (מסך / פיצ'ר / עוסק ב)
-/sprints  – סיכום ספרינטים + חלוקת בוטים
+/status   – סטטוס פרויקט לפי ספרינטים
+/workers  – פירוט מלא לפי עובד
+/sprints  – ספירת משימות לפי ספרינט (בזמן אמת)
 /tasks    – רשימת משימות עם סטטוס
 /log      – 15 שורות לוג אחרונות
 /log30    – 30 שורות לוג
-/version  – גרסת הבוט הנוכחית
-/help     – עזרה
+/version  – גרסת הבוט
+/help     – עזרה זו
 
-🔖 <i>גרסה: $(echo "${BOT_VERSION}" | cut -c1-40)</i>"
+🔖 <i>${BOT_VERSION}</i>"
         ;;
 
     esac
