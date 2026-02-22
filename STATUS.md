@@ -1,10 +1,10 @@
 # סטטוס עדכני – מערכת ניהול משרד רו"ח
-**עודכן לאחרונה:** 2026-02-22 00:33:17
-**עובד אחרון:** המתזמר
-**משימה:** [GIT] – DONE
+**עודכן לאחרונה:** 2026-02-22 01:25:35
+**עובד אחרון:** האדריכל
+**משימה:** [T26] – DONE
 
 ## ✅ משימה נוכחית
-**המתזמר** | **[GIT]** | DONE: Rebase feature branch על accounting – diverge נפתר, PR נקי
+**האדריכל** | **[T26]** | DONE: 24/7 infrastructure: Docker watchdog + autostart crontab + Telegram bot resilience
 
 ## 20 הרשומות האחרונות בלוג
 ```
@@ -13,6 +13,7 @@
 [2026-02-22 00:10:59] ✅ [DONE] [T15-T20] [מפתח-לקוח] FE: ClientCreatePage + UsersPage + ProcessDetailPage status transitions + routes wired
 [2026-02-22 00:18:35] ✅ [DONE] [T15-T25] [מפתח-לקוח] Sprint 3 FE הושלם: TASKS.md עודכן + telegram-poll תוקן (Python bug + message split + @BotName strip + /sprints דינמי)
 [2026-02-22 00:33:17] ✅ [DONE] [GIT] [המתזמר] Rebase feature branch על accounting – diverge נפתר, PR נקי
+[2026-02-22 01:25:35] ✅ [DONE] [T26] [האדריכל] 24/7 infrastructure: Docker watchdog + autostart crontab + Telegram bot resilience
 ```
 
 ## איך לעקוב מבחוץ
