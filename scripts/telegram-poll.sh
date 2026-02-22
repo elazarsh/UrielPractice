@@ -268,15 +268,14 @@ data = json.load(sys.stdin)
 if data.get('ok') and data.get('result'):
     for r in data['result']:
         msg = r.get('message', {})
-        text = msg.get('text', '')
+        text = msg.get('text', '').replace('\t', ' ')
         update_id = r.get('update_id', 0)
-        print(f'{update_id}|||{text}')
+        print(f'{update_id}\t{text}')
 " 2>/dev/null)
 
-  while IFS= read -r line; do
-    [ -z "$line" ] && continue
-    UPDATE_ID=$(echo "$line" | cut -d'|||' -f1)
-    RAW_TEXT=$(echo "$line" | cut -d'|||' -f2)
+  # IFS=tab: UPDATE_ID gets field before tab, RAW_TEXT gets everything after
+  while IFS=$'\t' read -r UPDATE_ID RAW_TEXT; do
+    [ -z "$UPDATE_ID" ] && continue
     OFFSET=$((UPDATE_ID + 1))
 
     # strip @BotName suffix (e.g. /help@MyBot → /help)
